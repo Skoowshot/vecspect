@@ -1,18 +1,26 @@
 package logic
 
 import (
+	"log"
+
 	"github.com/Skoowshot/vecspect/domain"
 	"github.com/Skoowshot/vecspect/telegram"
 )
 
+const pollTimeout = 30
+const workerCount = 4
+const queueLength = 100
+
 type App struct {
 	bot      *telegram.TelegramBot
 	listener *telegram.DefaultUpdateListener
+	learn    *LearnManager
 }
 
 func NewApp(token string) *App {
 	a := &App{
-		bot: telegram.NewTelegramBot(token, 30),
+		bot:   telegram.NewTelegramBot(token, pollTimeout),
+		learn: NewLearnManager(workerCount, queueLength),
 	}
 	a.listener = telegram.NewDefaultUpdateListener(
 		a.OnMessage,
@@ -25,13 +33,32 @@ func (a *App) Start() {
 }
 
 func (a *App) OnMessage(message *domain.Message) {
-	println("received message from " + message.FromUser.Username + ": " + message.Text)
+	if message.Text == "" {
+		log.Println("received empty message, skipping")
+		return
+	}
+
+	log.Printf("received message from %v: %v", message.FromUser.Username, message.Text)
+	log.Printf("| chat %v, forum: %v, thread: %v", message.Chat.ChatId, message.Chat.IsForum, message.MessageThreadId)
 
 	if replyTo := message.ReplyTo; replyTo != nil {
-		a.OnReply(message, replyTo)
+		if replyTo.Text != "" {
+			a.OnReply(message, replyTo)
+		}
 	}
 }
 
 func (a *App) OnReply(message *domain.Message, replyTo *domain.Message) {
-	println("> reply to @" + replyTo.FromUser.Username + ": " + replyTo.Text)
+	log.Printf("| reply to %v: %v", replyTo.FromUser.Username, replyTo.Text)
+	if message.FromUser.IsBot || replyTo.FromUser.IsBot {
+		log.Println("| skipping, one of users (reply or from) is a bot")
+		return
+	}
+
+	chatId := message.Chat.ChatId
+	replyText := message.Text
+	originalText := message.ReplyTo.Text
+
+	pair := NewPair(chatId, originalText, replyText)
+	a.learn.Push(pair)
 }

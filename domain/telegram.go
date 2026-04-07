@@ -17,17 +17,20 @@ func (u Updates) LastUpdateId(def int64) int64 {
 }
 
 type Message struct {
-	MessageId int64    `json:"message_id"`
-	Chat      Chat     `json:"chat"`
-	Date      int      `json:"date"`
-	Text      string   `json:"text"`
-	FromUser  User     `json:"from"`
-	ReplyTo   *Message `json:"reply_to_message"`
+	MessageId       int64    `json:"message_id"`
+	MessageThreadId int64    `json:"message_thread_id"`
+	Chat            Chat     `json:"chat"`
+	Date            int      `json:"date"`
+	Text            string   `json:"text"`
+	FromUser        User     `json:"from"`
+	ReplyTo         *Message `json:"reply_to_message"`
+	IsTopicMessage  bool     `json:"is_topic_message"`
 }
 
 type Chat struct {
-	ChatId int64  `json:"id"`
-	Type   string `json:"type"`
+	ChatId  int64  `json:"id"`
+	Type    string `json:"type"`
+	IsForum bool   `json:"is_forum"`
 }
 
 type User struct {

@@ -3,17 +3,12 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/Skoowshot/vecspect/domain"
 	"github.com/Skoowshot/vecspect/logic"
 	"github.com/joho/godotenv"
 )
-
-type Listener struct{}
-
-func (*Listener) OnUpdate(update *domain.Update) {
-	println(update.Message.Text)
-}
 
 func main() {
 	err := godotenv.Load()
@@ -22,7 +17,16 @@ func main() {
 	}
 
 	token := os.Getenv("BOT_TOKEN")
-	
+
 	a := logic.NewApp(token)
-	a.Start()
+	go a.Start()
+
+	println("bot started")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	<-quit
+
+	println("shutting down")
 }
