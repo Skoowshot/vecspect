@@ -4,9 +4,16 @@ import (
 	"log"
 	"os"
 
-	"github.com/Skoowshot/vecspect/telegram"
+	"github.com/Skoowshot/vecspect/domain"
+	"github.com/Skoowshot/vecspect/logic"
 	"github.com/joho/godotenv"
 )
+
+type Listener struct{}
+
+func (*Listener) OnUpdate(update *domain.Update) {
+	println(update.Message.Text)
+}
 
 func main() {
 	err := godotenv.Load()
@@ -15,11 +22,7 @@ func main() {
 	}
 
 	token := os.Getenv("BOT_TOKEN")
-
-	b := telegram.NewTelegramBot(token, 30)
-	updates, err := b.GetUpdates(-1)
-	if err != nil {
-		return
-	}
-	println(updates.LastUpdateId(-1))
+	
+	a := logic.NewApp(token)
+	a.Start()
 }
