@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/Skoowshot/vecspect/domain"
+	"github.com/Skoowshot/vecspect/logic/train"
 	"github.com/Skoowshot/vecspect/telegram"
 )
 
@@ -14,13 +15,13 @@ const queueLength = 100
 type App struct {
 	bot      *telegram.TelegramBot
 	listener *telegram.DefaultUpdateListener
-	learn    *LearnManager
+	learn    *train.TrainingOrchestrator
 }
 
 func NewApp(token string) *App {
 	a := &App{
 		bot:   telegram.NewTelegramBot(token, pollTimeout),
-		learn: NewLearnManager(workerCount, queueLength),
+		learn: train.NewOrchestrator(workerCount, queueLength),
 	}
 	a.listener = telegram.NewDefaultUpdateListener(
 		a.OnMessage,
@@ -45,7 +46,17 @@ func (a *App) OnMessage(message *domain.Message) {
 		if replyTo.Text != "" {
 			a.OnReply(message, replyTo)
 		}
+	} else {
+		a.OnRegularMessage(message)
 	}
+}
+
+func (a *App) OnRegularMessage(message *domain.Message) {
+	chatId := message.Chat.ChatId
+	originalText := message.ReplyTo.Text
+
+	msg := domain.NewTrainMessage(chatId, originalText)
+	a.learn.Push(msg)
 }
 
 func (a *App) OnReply(message *domain.Message, replyTo *domain.Message) {
@@ -59,6 +70,6 @@ func (a *App) OnReply(message *domain.Message, replyTo *domain.Message) {
 	replyText := message.Text
 	originalText := message.ReplyTo.Text
 
-	pair := NewPair(chatId, originalText, replyText)
-	a.learn.Push(pair)
+	msg := domain.NewTrainMessageWithReply(chatId, originalText, replyText)
+	a.learn.Push(msg)
 }
