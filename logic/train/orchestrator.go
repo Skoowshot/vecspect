@@ -5,6 +5,8 @@ import "github.com/Skoowshot/vecspect/domain"
 type TrainingOrchestrator struct {
 	WorkerCount  int
 	WorkerQueues []chan domain.TrainingMessage
+
+	Tokenizer *Tokenizer
 }
 
 func NewOrchestrator(workerCount int, workerQueueSize int) *TrainingOrchestrator {
@@ -16,6 +18,8 @@ func NewOrchestrator(workerCount int, workerQueueSize int) *TrainingOrchestrator
 	orchestrator := &TrainingOrchestrator{
 		WorkerCount:  workerCount,
 		WorkerQueues: queues,
+
+		Tokenizer: NewTokenizer(),
 	}
 
 	orchestrator.Start()
@@ -24,14 +28,10 @@ func NewOrchestrator(workerCount int, workerQueueSize int) *TrainingOrchestrator
 }
 
 func (o *TrainingOrchestrator) Start() {
-	worker := func(id int) {
-		for msg := range o.WorkerQueues[id] {
-			println("worker", id, ">", msg.Original, msg.Reply)
-		}
-	}
-
+	worker := NewWorker(o)
+	
 	for i := 0; i < o.WorkerCount; i++ {
-		go worker(i)
+		go worker.Start(i)
 	}
 }
 

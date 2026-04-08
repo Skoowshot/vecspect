@@ -53,8 +53,8 @@ func (a *App) OnMessage(message *domain.Message) {
 
 func (a *App) OnRegularMessage(message *domain.Message) {
 	chatId := message.Chat.ChatId
-	originalText := message.ReplyTo.Text
-
+	originalText := message.Text
+	
 	msg := domain.NewTrainMessage(chatId, originalText)
 	a.learn.Push(msg)
 }
